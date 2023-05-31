@@ -12,6 +12,9 @@ keywords = ["ffi", "capi", "encoding", "unicode", "charset"]
 build = "build.rs"
 links = "encoding_c"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [features]
 simd-accel = ["encoding_rs/simd-accel"]
 less-slow-kanji-encode = ["encoding_rs/less-slow-kanji-encode"]
