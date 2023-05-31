@@ -46,6 +46,15 @@
 
 extern crate encoding_rs;
 
+extern crate liquid_ffi;
+
+use liquid_ffi::lffi_tracing_allocator::LffiAllocator;
+use std::alloc::System;
+
+// use our instrumented allocator
+#[global_allocator]
+static ALLOCATOR: LffiAllocator<System> = LffiAllocator::system();
+
 use encoding_rs::*;
 
 /// Return value for `*_decode_*` and `*_encode_*` functions that indicates that
