@@ -55,6 +55,20 @@ use std::alloc::System;
 #[global_allocator]
 static ALLOCATOR: LffiAllocator<System> = LffiAllocator::system();
 
+macro_rules! lffi_check_valid_mem {
+    ($ptr:expr) => {
+        if $ptr.is_null() {
+            assert!(false);
+        }
+    };
+
+    ($ptr:expr, $len:expr) => {
+        if liquid_ffi::lffi_valid_cpp_alloc($ptr as *mut std::ffi::c_void, $len) == 0 {
+            assert!(false);
+        };
+    };
+}
+
 use encoding_rs::*;
 
 /// Return value for `*_decode_*` and `*_encode_*` functions that indicates that
@@ -306,6 +320,7 @@ fn option_to_ptr(opt: Option<&'static Encoding>) -> *const Encoding {
 /// of if `label` is `NULL`.
 #[no_mangle]
 pub unsafe extern "C" fn encoding_for_label(label: *const u8, label_len: usize) -> *const Encoding {
+    lffi_check_valid_mem!(label, label_len);
     let label_slice = ::std::slice::from_raw_parts(label, label_len);
     option_to_ptr(Encoding::for_label(label_slice))
 }
@@ -342,6 +357,7 @@ pub unsafe extern "C" fn encoding_for_label_no_replacement(
     label: *const u8,
     label_len: usize,
 ) -> *const Encoding {
+    lffi_check_valid_mem!(label, label_len);
     let label_slice = ::std::slice::from_raw_parts(label, label_len);
     option_to_ptr(Encoding::for_label_no_replacement(label_slice))
 }
@@ -371,6 +387,8 @@ pub unsafe extern "C" fn encoding_for_bom(
     buffer: *const u8,
     buffer_len: *mut usize,
 ) -> *const Encoding {
+    lffi_check_valid_mem!(buffer_len);
+    lffi_check_valid_mem!(buffer, *buffer_len);
     let buffer_slice = ::std::slice::from_raw_parts(buffer, *buffer_len);
     let (encoding, bom_length) = match Encoding::for_bom(buffer_slice) {
         Some((encoding, bom_length)) => (encoding as *const Encoding, bom_length),
@@ -395,6 +413,8 @@ pub unsafe extern "C" fn encoding_for_bom(
 /// `ENCODING_NAME_MAX_LENGTH` bytes.
 #[no_mangle]
 pub unsafe extern "C" fn encoding_name(encoding: *const Encoding, name_out: *mut u8) -> usize {
+    lffi_check_valid_mem!(encoding, ENCODING_NAME_MAX_LENGTH);
+    lffi_check_valid_mem!(name_out);
     let bytes = (*encoding).name().as_bytes();
     ::std::ptr::copy_nonoverlapping(bytes.as_ptr(), name_out, bytes.len());
     bytes.len()
@@ -408,6 +428,7 @@ pub unsafe extern "C" fn encoding_name(encoding: *const Encoding, name_out: *mut
 /// UB ensues if the argument is `NULL`.
 #[no_mangle]
 pub unsafe extern "C" fn encoding_can_encode_everything(encoding: *const Encoding) -> bool {
+    lffi_check_valid_mem!(encoding);
     (*encoding).can_encode_everything()
 }
 
@@ -419,6 +440,7 @@ pub unsafe extern "C" fn encoding_can_encode_everything(encoding: *const Encodin
 /// UB ensues if the argument is `NULL`.
 #[no_mangle]
 pub unsafe extern "C" fn encoding_is_ascii_compatible(encoding: *const Encoding) -> bool {
+    lffi_check_valid_mem!(encoding);
     (*encoding).is_ascii_compatible()
 }
 
@@ -435,6 +457,7 @@ pub unsafe extern "C" fn encoding_is_ascii_compatible(encoding: *const Encoding)
 /// UB ensues if the argument is `NULL`.
 #[no_mangle]
 pub unsafe extern "C" fn encoding_is_single_byte(encoding: *const Encoding) -> bool {
+    lffi_check_valid_mem!(encoding);
     (*encoding).is_single_byte()
 }
 
@@ -446,6 +469,7 @@ pub unsafe extern "C" fn encoding_is_single_byte(encoding: *const Encoding) -> b
 /// UB ensues if the argument is `NULL`.
 #[no_mangle]
 pub unsafe extern "C" fn encoding_output_encoding(encoding: *const Encoding) -> *const Encoding {
+    lffi_check_valid_mem!(encoding);
     (*encoding).output_encoding()
 }
 
@@ -464,6 +488,7 @@ pub unsafe extern "C" fn encoding_output_encoding(encoding: *const Encoding) -> 
 /// UB ensues if the argument is `NULL`.
 #[no_mangle]
 pub unsafe extern "C" fn encoding_new_decoder(encoding: *const Encoding) -> *mut Decoder {
+    lffi_check_valid_mem!(encoding);
     Box::into_raw(Box::new((*encoding).new_decoder()))
 }
 
@@ -487,6 +512,7 @@ pub unsafe extern "C" fn encoding_new_decoder(encoding: *const Encoding) -> *mut
 pub unsafe extern "C" fn encoding_new_decoder_with_bom_removal(
     encoding: *const Encoding,
 ) -> *mut Decoder {
+    lffi_check_valid_mem!(encoding);
     Box::into_raw(Box::new((*encoding).new_decoder_with_bom_removal()))
 }
 
@@ -513,6 +539,7 @@ pub unsafe extern "C" fn encoding_new_decoder_with_bom_removal(
 pub unsafe extern "C" fn encoding_new_decoder_without_bom_handling(
     encoding: *const Encoding,
 ) -> *mut Decoder {
+    lffi_check_valid_mem!(encoding);
     Box::into_raw(Box::new((*encoding).new_decoder_without_bom_handling()))
 }
 
@@ -532,6 +559,8 @@ pub unsafe extern "C" fn encoding_new_decoder_into(
     encoding: *const Encoding,
     decoder: *mut Decoder,
 ) {
+    lffi_check_valid_mem!(encoding);
+    lffi_check_valid_mem!(decoder);
     *decoder = (*encoding).new_decoder();
 }
 
@@ -556,6 +585,8 @@ pub unsafe extern "C" fn encoding_new_decoder_with_bom_removal_into(
     encoding: *const Encoding,
     decoder: *mut Decoder,
 ) {
+    lffi_check_valid_mem!(encoding);
+    lffi_check_valid_mem!(decoder);
     *decoder = (*encoding).new_decoder_with_bom_removal();
 }
 
@@ -579,6 +610,8 @@ pub unsafe extern "C" fn encoding_new_decoder_without_bom_handling_into(
     encoding: *const Encoding,
     decoder: *mut Decoder,
 ) {
+    lffi_check_valid_mem!(encoding);
+    lffi_check_valid_mem!(decoder);
     *decoder = (*encoding).new_decoder_without_bom_handling();
 }
 
@@ -596,6 +629,7 @@ pub unsafe extern "C" fn encoding_new_decoder_without_bom_handling_into(
 /// UB ensues if the argument is `NULL`.
 #[no_mangle]
 pub unsafe extern "C" fn encoding_new_encoder(encoding: *const Encoding) -> *mut Encoder {
+    lffi_check_valid_mem!(encoding);
     Box::into_raw(Box::new((*encoding).new_encoder()))
 }
 
@@ -611,6 +645,8 @@ pub unsafe extern "C" fn encoding_new_encoder_into(
     encoding: *const Encoding,
     encoder: *mut Encoder,
 ) {
+    lffi_check_valid_mem!(encoding);
+    lffi_check_valid_mem!(encoder);
     *encoder = (*encoding).new_encoder();
 }
 
@@ -630,6 +666,7 @@ pub unsafe extern "C" fn encoding_new_encoder_into(
 /// block of if `buffer` is `NULL`.
 #[no_mangle]
 pub unsafe extern "C" fn encoding_utf8_valid_up_to(buffer: *const u8, buffer_len: usize) -> usize {
+    lffi_check_valid_mem!(buffer, buffer_len);
     let buffer_slice = ::std::slice::from_raw_parts(buffer, buffer_len);
     Encoding::utf8_valid_up_to(buffer_slice)
 }
@@ -650,6 +687,7 @@ pub unsafe extern "C" fn encoding_utf8_valid_up_to(buffer: *const u8, buffer_len
 /// block of if `buffer` is `NULL`.
 #[no_mangle]
 pub unsafe extern "C" fn encoding_ascii_valid_up_to(buffer: *const u8, buffer_len: usize) -> usize {
+    lffi_check_valid_mem!(buffer, buffer_len);
     let buffer_slice = ::std::slice::from_raw_parts(buffer, buffer_len);
     Encoding::ascii_valid_up_to(buffer_slice)
 }
@@ -674,6 +712,7 @@ pub unsafe extern "C" fn encoding_iso_2022_jp_ascii_valid_up_to(
     buffer: *const u8,
     buffer_len: usize,
 ) -> usize {
+    lffi_check_valid_mem!(buffer, buffer_len);
     let buffer_slice = ::std::slice::from_raw_parts(buffer, buffer_len);
     Encoding::iso_2022_jp_ascii_valid_up_to(buffer_slice)
 }
@@ -685,6 +724,7 @@ pub unsafe extern "C" fn encoding_iso_2022_jp_ascii_valid_up_to(
 /// UB ensues if the argument is `NULL`.
 #[no_mangle]
 pub unsafe extern "C" fn decoder_free(decoder: *mut Decoder) {
+    lffi_check_valid_mem!(decoder);
     let _ = Box::from_raw(decoder);
 }
 
@@ -698,6 +738,7 @@ pub unsafe extern "C" fn decoder_free(decoder: *mut Decoder) {
 /// UB ensues if the argument is `NULL`.
 #[no_mangle]
 pub unsafe extern "C" fn decoder_encoding(decoder: *const Decoder) -> *const Encoding {
+    lffi_check_valid_mem!(decoder);
     (*decoder).encoding()
 }
 
@@ -717,6 +758,7 @@ pub unsafe extern "C" fn decoder_max_utf8_buffer_length(
     decoder: *const Decoder,
     byte_length: usize,
 ) -> usize {
+    lffi_check_valid_mem!(decoder);
     (*decoder)
         .max_utf8_buffer_length(byte_length)
         .unwrap_or(::std::usize::MAX)
@@ -740,6 +782,7 @@ pub unsafe extern "C" fn decoder_max_utf8_buffer_length_without_replacement(
     decoder: *const Decoder,
     byte_length: usize,
 ) -> usize {
+    lffi_check_valid_mem!(decoder);
     (*decoder)
         .max_utf8_buffer_length_without_replacement(byte_length)
         .unwrap_or(::std::usize::MAX)
@@ -774,6 +817,11 @@ pub unsafe extern "C" fn decoder_decode_to_utf8(
     last: bool,
     had_replacements: *mut bool,
 ) -> u32 {
+    lffi_check_valid_mem!(decoder);
+    lffi_check_valid_mem!(src_len);
+    lffi_check_valid_mem!(dst_len);
+    lffi_check_valid_mem!(src, *src_len);
+    lffi_check_valid_mem!(dst, *dst_len);
     let src_slice = ::std::slice::from_raw_parts(src, *src_len);
     let dst_slice = ::std::slice::from_raw_parts_mut(dst, *dst_len);
     let (result, read, written, replaced) = (*decoder).decode_to_utf8(src_slice, dst_slice, last);
@@ -810,6 +858,11 @@ pub unsafe extern "C" fn decoder_decode_to_utf8_without_replacement(
     dst_len: *mut usize,
     last: bool,
 ) -> u32 {
+    lffi_check_valid_mem!(decoder);
+    lffi_check_valid_mem!(src_len);
+    lffi_check_valid_mem!(dst_len);
+    lffi_check_valid_mem!(src, *src_len);
+    lffi_check_valid_mem!(dst, *dst_len);
     let src_slice = ::std::slice::from_raw_parts(src, *src_len);
     let dst_slice = ::std::slice::from_raw_parts_mut(dst, *dst_len);
     let (result, read, written) =
@@ -838,6 +891,7 @@ pub unsafe extern "C" fn decoder_max_utf16_buffer_length(
     decoder: *const Decoder,
     u16_length: usize,
 ) -> usize {
+    lffi_check_valid_mem!(decoder);
     (*decoder)
         .max_utf16_buffer_length(u16_length)
         .unwrap_or(::std::usize::MAX)
@@ -872,6 +926,11 @@ pub unsafe extern "C" fn decoder_decode_to_utf16(
     last: bool,
     had_replacements: *mut bool,
 ) -> u32 {
+    lffi_check_valid_mem!(decoder);
+    lffi_check_valid_mem!(src_len);
+    lffi_check_valid_mem!(dst_len);
+    lffi_check_valid_mem!(src, *src_len);
+    lffi_check_valid_mem!(dst, *dst_len);
     let src_slice = ::std::slice::from_raw_parts(src, *src_len);
     let dst_slice = ::std::slice::from_raw_parts_mut(dst, *dst_len);
     let (result, read, written, replaced) = (*decoder).decode_to_utf16(src_slice, dst_slice, last);
@@ -908,6 +967,11 @@ pub unsafe extern "C" fn decoder_decode_to_utf16_without_replacement(
     dst_len: *mut usize,
     last: bool,
 ) -> u32 {
+    lffi_check_valid_mem!(decoder);
+    lffi_check_valid_mem!(src_len);
+    lffi_check_valid_mem!(dst_len);
+    lffi_check_valid_mem!(src, *src_len);
+    lffi_check_valid_mem!(dst, *dst_len);
     let src_slice = ::std::slice::from_raw_parts(src, *src_len);
     let dst_slice = ::std::slice::from_raw_parts_mut(dst, *dst_len);
     let (result, read, written) =
@@ -943,6 +1007,7 @@ pub unsafe extern "C" fn decoder_latin1_byte_compatible_up_to(
     buffer: *const u8,
     buffer_len: usize,
 ) -> usize {
+    lffi_check_valid_mem!(buffer, buffer_len);
     (*decoder)
         .latin1_byte_compatible_up_to(::std::slice::from_raw_parts(buffer, buffer_len))
         .unwrap_or(::std::usize::MAX)
@@ -955,6 +1020,7 @@ pub unsafe extern "C" fn decoder_latin1_byte_compatible_up_to(
 /// UB ensues if the argument is `NULL`.
 #[no_mangle]
 pub unsafe extern "C" fn encoder_free(encoder: *mut Encoder) {
+    lffi_check_valid_mem!(encoder);
     let _ = Box::from_raw(encoder);
 }
 
@@ -965,6 +1031,7 @@ pub unsafe extern "C" fn encoder_free(encoder: *mut Encoder) {
 /// UB ensues if the argument is `NULL`.
 #[no_mangle]
 pub unsafe extern "C" fn encoder_encoding(encoder: *const Encoder) -> *const Encoding {
+    lffi_check_valid_mem!(encoder);
     (*encoder).encoding()
 }
 
@@ -976,6 +1043,7 @@ pub unsafe extern "C" fn encoder_encoding(encoder: *const Encoder) -> *const Enc
 /// UB ensues if the argument is `NULL`.
 #[no_mangle]
 pub unsafe extern "C" fn encoder_has_pending_state(encoder: *const Encoder) -> bool {
+    lffi_check_valid_mem!(encoder);
     (*encoder).has_pending_state()
 }
 
@@ -1044,6 +1112,11 @@ pub unsafe extern "C" fn encoder_encode_from_utf8(
     last: bool,
     had_replacements: *mut bool,
 ) -> u32 {
+    lffi_check_valid_mem!(encoder);
+    lffi_check_valid_mem!(src_len);
+    lffi_check_valid_mem!(dst_len);
+    lffi_check_valid_mem!(src, *src_len);
+    lffi_check_valid_mem!(dst, *dst_len);
     let src_slice = ::std::slice::from_raw_parts(src, *src_len);
     let string = ::std::str::from_utf8_unchecked(src_slice);
     let dst_slice = ::std::slice::from_raw_parts_mut(dst, *dst_len);
@@ -1084,6 +1157,11 @@ pub unsafe extern "C" fn encoder_encode_from_utf8_without_replacement(
     dst_len: *mut usize,
     last: bool,
 ) -> u32 {
+    lffi_check_valid_mem!(encoder);
+    lffi_check_valid_mem!(src_len);
+    lffi_check_valid_mem!(dst_len);
+    lffi_check_valid_mem!(src, *src_len);
+    lffi_check_valid_mem!(dst, *dst_len);
     let src_slice = ::std::slice::from_raw_parts(src, *src_len);
     let string = ::std::str::from_utf8_unchecked(src_slice);
     let dst_slice = ::std::slice::from_raw_parts_mut(dst, *dst_len);
@@ -1156,6 +1234,11 @@ pub unsafe extern "C" fn encoder_encode_from_utf16(
     last: bool,
     had_replacements: *mut bool,
 ) -> u32 {
+    lffi_check_valid_mem!(encoder);
+    lffi_check_valid_mem!(src_len);
+    lffi_check_valid_mem!(dst_len);
+    lffi_check_valid_mem!(src, *src_len);
+    lffi_check_valid_mem!(dst, *dst_len);
     let src_slice = ::std::slice::from_raw_parts(src, *src_len);
     let dst_slice = ::std::slice::from_raw_parts_mut(dst, *dst_len);
     let (result, read, written, replaced) =
@@ -1193,6 +1276,11 @@ pub unsafe extern "C" fn encoder_encode_from_utf16_without_replacement(
     dst_len: *mut usize,
     last: bool,
 ) -> u32 {
+    lffi_check_valid_mem!(encoder);
+    lffi_check_valid_mem!(src_len);
+    lffi_check_valid_mem!(dst_len);
+    lffi_check_valid_mem!(src, *src_len);
+    lffi_check_valid_mem!(dst, *dst_len);
     let src_slice = ::std::slice::from_raw_parts(src, *src_len);
     let dst_slice = ::std::slice::from_raw_parts_mut(dst, *dst_len);
     let (result, read, written) =
