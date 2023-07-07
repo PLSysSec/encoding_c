@@ -55,17 +55,18 @@ use std::alloc::System;
 #[global_allocator]
 static ALLOCATOR: LffiAllocator<System> = LffiAllocator::system();
 
+const fn ptr_target_size<T>(_ptr: *const T) -> usize {
+    std::mem::size_of::<T>()
+}
+
 macro_rules! lffi_check_valid_mem {
     ($ptr:expr) => {
-        if $ptr.is_null() {
-            assert!(false);
-        }
+        assert!(liquid_ffi::lffi_valid_cpp_alloc($ptr as *mut std::ffi::c_void, ptr_target_size($ptr)) != 0);
+        // assert!(!$ptr.is_null());
     };
 
     ($ptr:expr, $len:expr) => {
-        if liquid_ffi::lffi_valid_cpp_alloc($ptr as *mut std::ffi::c_void, $len) == 0 {
-            assert!(false);
-        };
+        assert!(liquid_ffi::lffi_valid_cpp_alloc($ptr as *mut std::ffi::c_void, $len) != 0);
     };
 }
 
