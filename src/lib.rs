@@ -52,6 +52,7 @@ use liquid_ffi::lffi_tracing_allocator::LffiAllocator;
 use std::alloc::System;
 
 // use our instrumented allocator
+#[cfg(not(feature = "no-guard"))]
 #[global_allocator]
 static ALLOCATOR: LffiAllocator<System> = LffiAllocator::system();
 
@@ -59,15 +60,22 @@ const fn ptr_target_size<T>(_ptr: *const T) -> usize {
     std::mem::size_of::<T>()
 }
 
+#[cfg(not(feature = "no-guard"))]
 macro_rules! lffi_check_valid_mem {
     ($ptr:expr) => {
-        assert!(liquid_ffi::lffi_valid_cpp_alloc($ptr as *mut std::ffi::c_void, ptr_target_size($ptr)) != 0);
+        assert!(liquid_ffi::lffi_valid_rust_alloc($ptr as *mut std::ffi::c_void, ptr_target_size($ptr)) != 0);
         // assert!(!$ptr.is_null());
     };
 
     ($ptr:expr, $len:expr) => {
         assert!(liquid_ffi::lffi_valid_cpp_alloc($ptr as *mut std::ffi::c_void, $len) != 0);
     };
+}
+
+#[cfg(feature = "no-guard")]
+macro_rules! lffi_check_valid_mem {
+    ($ptr:expr) => {};
+    ($ptr:expr, $len:expr) => {};
 }
 
 use encoding_rs::*;

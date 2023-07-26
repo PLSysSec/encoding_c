@@ -29,6 +29,8 @@ fast-kanji-encode = ["encoding_rs/fast-kanji-encode"]
 fast-gb-hanzi-encode = ["encoding_rs/fast-gb-hanzi-encode"]
 fast-big5-hanzi-encode = ["encoding_rs/fast-big5-hanzi-encode"]
 fast-legacy-encode = ["encoding_rs/fast-legacy-encode"]
+no-guard = []
+
 
 [dependencies]
 encoding_rs = "0.8.20"
