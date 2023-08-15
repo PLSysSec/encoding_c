@@ -47,6 +47,8 @@
 extern crate encoding_rs;
 
 use encoding_rs::*;
+mod safe_ffi;
+use safe_ffi::*;
 
 /// Return value for `*_decode_*` and `*_encode_*` functions that indicates that
 /// the input has been exhausted.
